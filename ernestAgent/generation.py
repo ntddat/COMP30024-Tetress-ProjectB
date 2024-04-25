@@ -201,7 +201,7 @@ def generate_I_pieces(
     if (piece_is_legal(board, PlaceAction(square.up(3), square.up(2), square.up(), square))):
         I_pieces.append(PlaceAction(square.up(3), square.up(2), square.up(), square))
 
-    return I_pieces
+    return I_pieces;
 
 def generate_L_pieces(
     board: dict[Coord, PlayerColor],
@@ -252,7 +252,7 @@ def generate_L_pieces(
     if (piece_is_legal(board, PlaceAction(square.down().left(2), square.down().left(), square.down(), square))):
         L_pieces.append(PlaceAction(square.down().left(2), square.down().left(), square.down(), square))
 
-    return L_pieces
+    return L_pieces;
 
 def generate_J_pieces(
     board: dict[Coord, PlayerColor],
@@ -303,7 +303,7 @@ def generate_J_pieces(
     if (piece_is_legal(board, PlaceAction(square.up().left(2), square.up().left(), square.up(), square))):
         J_pieces.append(PlaceAction(square.up().left(2), square.up().left(), square.up(), square))
 
-    return J_pieces
+    return J_pieces;
 
 def generate_T_pieces(
     board: dict[Coord, PlayerColor],
@@ -315,7 +315,7 @@ def generate_T_pieces(
     Each piece will have an maximum of 4 arrangements, since there is a possibility that all 4 squares of
     the piece itself can be placed on the given square.
     """
-    T_pieces = []
+    T_pieces = [];
 
     # T piece rotated 0 degrees to the right
     if (piece_is_legal(board, PlaceAction(square, square.right(), square.right().down(), square.right(2)))):
@@ -354,7 +354,7 @@ def generate_T_pieces(
     if (piece_is_legal(board, PlaceAction(square.down(2), square.down(), square.right().down(), square))):
         T_pieces.append(PlaceAction(square.down(2), square.down(), square.right().down(), square))
 
-    return T_pieces
+    return T_pieces;
 
 def generate_Z_pieces(
     board: dict[Coord, PlayerColor],
@@ -432,7 +432,7 @@ def generate_O_pieces(
     Each piece will have an maximum of 4 arrangements, since there is a possibility that all 4 squares of
     the piece itself can be placed on the given square.
     """
-    O_pieces = []
+    O_pieces = [];
 
     if (piece_is_legal(board, PlaceAction(square, square.right(), square.down(), square.right().down()))):
         O_pieces.append(PlaceAction(square, square.right(), square.down(), square.right().down()))
