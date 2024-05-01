@@ -1,16 +1,19 @@
 from referee.game import Coord, PlayerColor, BOARD_N, PlaceAction
 from .state import State
 from .generation import generate_pieces, generate_states
+import math
 import random 
 
 MAX_MOVES = 150
 WIN = 1
 DRAW = 0
 LOSE = -1
+EXPLORATION_PARAMETER = math.sqrt(2)
 
-# i need to check the state of the board first, to find all the possible squares i shall do mcts on
-# once i have all the possible squares, i will run mcts on all of them 
-# store all the value for each square, once all the squares are done , choose the highest value and place action
+# things to do 
+# i need to implement the scoring function based on the formula in google 
+# i need store the number of wins/playouts for each piece and store them and return 
+# the piece with the best value based on the function. That will ne the optimal piece to place
 
 
 # checking if there is any red/blue square in the board, if there is not red square in the board and it is red turn, 
@@ -96,18 +99,25 @@ def mcts(
     optimalPiece = None
     optimalPieceScore = 0
     rolloutNum = 50
+    numParentPlayouts = 0
     childrenPieces = generate_pieces(curr.board, playerColor)
 
     for piece in childrenPieces:
         currentPieceScore = 0
+        numWins = 0
         place_piece(curr.board,piece, playerColor)
 
         for currentRollOut in range(rolloutNum):
-            currentPieceScore += rollout(curr.board, playerColor)
+            score = rollout(curr.board, playerColor)
+            numParentPlayouts += 1
+            if score == 1 :
+                numWins += 1
         
+        currentPieceScore = selection(numWins, rolloutNum, numParentPlayouts)
         if currentPieceScore > optimalPieceScore:
             optimalPiece = piece 
             optimalPieceScore = currentPieceScore
+
     
     return optimalPiece
 
@@ -143,7 +153,7 @@ def generateAndPlaceRandomEnemyMove(
     else:
         enemyColor = PlayerColor.RED
 
-    enemiesLegalPieces = generate_pieces(curr.board, not playerColor)
+    enemiesLegalPieces = generate_pieces(curr.board, not playerColor)                                           
     numberOfPieces = len(enemiesLegalPieces)
     if (numberOfPieces == 0):
         return WIN
@@ -200,3 +210,9 @@ def delete_lines(state: State):
             state.col_filled[key.c] -= 1
             del state.board[key]
 
+def selection(
+    numWins: int,
+    numPlayouts: int,
+    numParentPlayouts: int
+) -> float 
+     return (numWins / numPlayouts) + EXPLORATION_PARAMETER * (math.sqrt(math.log10(numParentPlayouts))/numPlayouts)
