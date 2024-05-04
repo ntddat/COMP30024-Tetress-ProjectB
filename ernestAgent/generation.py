@@ -60,19 +60,20 @@ def create_state(
 
 def generate_pieces(
     curr: State,
-    maxPlayer: bool
+    board: dict[Coord, PlayerColor],
+    playerColor: bool
 ) -> list[PlaceAction]:
     pieces = set()
-    legal_squares = generate_legal_squares(curr.board, maxPlayer)
+    legal_squares = generate_legal_squares(board, playerColor)
     #print(legal_squares)
     for square in legal_squares:
-        legal_pieces = generate_pieces_for_square(curr.board, square)
+        legal_pieces = generate_pieces_for_square(board, square)
         pieces.update(legal_pieces)
-    return pieces
+    return list(pieces)
 
 def generate_states(
     curr: State,
-    maxPlayer: bool
+    playerColor: bool
 ) -> list[State]:
     """
     Given a State and the target coordinate, return all neighbour states that can be reached from the given one,
@@ -80,11 +81,11 @@ def generate_states(
     """
     new_boards = set()
     new_states = []
-    legal_squares = generate_legal_squares(curr.board, maxPlayer)
+    legal_squares = generate_legal_squares(curr.board, playerColor)
     for square in legal_squares:
         legal_pieces = generate_pieces_for_square(curr.board, square)
         for piece in legal_pieces:
-            new_state = create_state(curr, piece, maxPlayer)
+            new_state = create_state(curr, piece, playerColor)
             new_board = frozenset(new_state.board.items())
             if new_board not in new_boards:
                 new_boards.add(new_board)
@@ -93,7 +94,7 @@ def generate_states(
 
 def generate_legal_squares(
     board: dict[Coord, PlayerColor],
-    maxPlayer: bool
+    playerColor: bool
 ) -> set[Coord]:
     """
     Given a board state, return all the legal empty squares where PlaceActions are possible around squares
@@ -101,7 +102,7 @@ def generate_legal_squares(
     """
     squares = []
     for key in board:
-        if maxPlayer:
+        if playerColor:
             if board[key] == PlayerColor.RED:
                 squares.extend(empty_squares_around(board, key))
         else:

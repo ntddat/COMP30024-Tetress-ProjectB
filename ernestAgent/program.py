@@ -1,10 +1,11 @@
 # COMP30024 Artificial Intelligence, Semester 1 2024
 # Project Part B: Game Playing Agent
 
-from referee.game import PlayerColor, Action, PlaceAction, Coord
+from referee.game import PlayerColor, Action, PlaceAction, Coord, BOARD_N
 from .generation import generate_states, create_state
 from .utils import render_board
 from .state import State
+from .mcts import mcts
 
 class Agent:
     """
@@ -17,6 +18,8 @@ class Agent:
         This constructor method runs when the referee instantiates the agent.
         Any setup and/or precomputation should be done here.
         """
+        board: dict[Coord, PlayerColor] = {}
+        self._state = State(board, None, [0]*BOARD_N, [0]*BOARD_N, 0)
         self._color = color
         match color:
             case PlayerColor.RED:
@@ -59,6 +62,15 @@ class Agent:
 
         # representing the board
         # the row would print out the number of filled squares in a list same for column 
+        print("BOARD:")
+        print(render_board(self._state.board, True))
+        print("ROW:")
+        print(self._state.row_filled)
+        print("COL:")
+        print(self._state.col_filled)
+
+        return mcts(self._state,playerColor)
+
 
 
     def update(self, color: PlayerColor, action: Action, **referee: dict):
@@ -75,3 +87,7 @@ class Agent:
         # demonstration purposes. You should replace this with your own logic
         # to update your agent's internal game state representation.
         print(f"Testing: {color} played PLACE action: {c1}, {c2}, {c3}, {c4}")
+        playerColor = True
+        if color == PlayerColor.BLUE:
+            playerColor = False
+        self._state = create_state(self._state, place_action, playerColor)
