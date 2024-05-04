@@ -60,14 +60,13 @@ def create_state(
 
 def generate_pieces(
     curr: State,
-    board: dict[Coord, PlayerColor],
     playerColor: bool
 ) -> list[PlaceAction]:
     pieces = set()
-    legal_squares = generate_legal_squares(board, playerColor)
+    legal_squares = generate_legal_squares(curr.board, playerColor)
     #print(legal_squares)
     for square in legal_squares:
-        legal_pieces = generate_pieces_for_square(board, square)
+        legal_pieces = generate_pieces_for_square(curr.board, square)
         pieces.update(legal_pieces)
     return list(pieces)
 

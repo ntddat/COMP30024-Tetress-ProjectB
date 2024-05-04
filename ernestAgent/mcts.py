@@ -19,20 +19,19 @@ TIME_LIMIT = 180
 # function to check if the board has any of either red or blue left
 def noPlayerColor( 
     curr: State,
-    board: dict[Coord, PlayerColor],
     playerColor: bool 
 ) -> bool:
     if curr.moves <= 2:
         return False
     
     if playerColor:
-        for key in board:
-            if board[key] == PlayerColor.RED:
+        for key in curr.board:
+            if curr.board[key] == PlayerColor.RED:
                 return False
             
     else:
-        for key in board:
-            if board[key] == PlayerColor.BLUE:
+        for key in curr.board:
+            if curr.board[key] == PlayerColor.BLUE:
                 return False
     
     return True
@@ -40,10 +39,9 @@ def noPlayerColor(
 # the function checks if the game will end either by not generating any more legal moves or no playercolor on the board
 def gameEndingCondition(
     curr: State,
-    board: dict[Coord, PlayerColor],
     playerColor: bool,
 ) -> bool:
-    if curr.moves == MAX_MOVES or noPlayerColor(curr, board, playerColor):
+    if curr.moves == MAX_MOVES or noPlayerColor(curr, playerColor):
         return True
     else:
         return False
@@ -51,15 +49,14 @@ def gameEndingCondition(
 # the function checks who is winner if the number of moves hits 150, by checking who has more squares  
 def evaluation(
     curr: State,
-    board: dict[Coord, PlayerColor],
     playerColor: bool
 ) -> int:
     numRedSquares = 0
     numBlueSquares = 0
-    for square in board:
-        if board[square] == PlayerColor.RED:
+    for square in curr.board:
+        if curr.board[square] == PlayerColor.RED:
             numRedSquares += 1
-        if board[square] == PlayerColor.BLUE:
+        if curr.board[square] == PlayerColor.BLUE:
             numBlueSquares += 1
 
     return result(numRedSquares, numBlueSquares, playerColor)
@@ -95,36 +92,41 @@ def result(
         else: 
             return DRAW
 
+def copyState(
+        curr: State
+) -> State:
+    testingState = State(curr.board.copy(), curr.piece, curr.row_filled.copy(), curr.col_filled.copy(), curr.moves)
+    return testingState
+
 # the function runs the mcts and returns the optimal piece within the time limit
 def mcts(
     curr: State,
     playerColor: bool
 ) -> PlaceAction:
     
-    testingBoard = curr.board
+    testingState = copyState(curr)
     optimalPiece = None
     optimalPieceScore = 0
-    rolloutNum = 50
+    rolloutNum = 150
     numParentPlayouts = 0
-    childrenPieces = generate_pieces(curr, testingBoard, playerColor)
+    childrenPieces = generate_pieces(testingState, playerColor)
     startTime = time.process_time()
 
     # iterating all possible pieces generated.
     for piece in childrenPieces:
-
         # time limit
         currentTime = time.process_time()
-        if (currentTime - startTime) >= 180:
+        if (currentTime - startTime) >= 3:
             return optimalPiece
         
         # i will place the piece and then start the mcts
         currentPieceScore = 0
         numWins = 0
-        place_piece(curr,testingBoard, piece, playerColor)
+        place_piece(testingState, piece, playerColor)
 
         # set the rollout num and iterating through how many rollouts
         for currentRollOut in range(rolloutNum):
-            score = rollout(curr, testingBoard, playerColor)
+            score = rollout(testingState, playerColor)
             numParentPlayouts += 1
             if score == WIN :
                 numWins += 1
@@ -141,32 +143,30 @@ def mcts(
 # the function recurse itself till the game ends.
 def rollout(
     curr: State,
-    board: dict[Coord, PlayerColor],
     playerColor: bool
 ) -> int:
 
     #terminating the function condition basically when the game ends
-    if gameEndingCondition(curr, board, playerColor):
-            return evaluation(curr, board, playerColor)
+    if gameEndingCondition(curr, playerColor):
+            return evaluation(curr, playerColor)
     
     # very basic move for now to generate and randomly places an enemy move, could be refined later on.
-    if generateAndPlaceRandomEnemyMove(curr, board, playerColor) == CONTINUE:
+    if generateAndPlaceRandomEnemyMove(curr, playerColor) == CONTINUE:
 
         # continue with the random placement of the player piece.
-        simulationMoves = generate_pieces(curr, board, playerColor)
+        simulationMoves = generate_pieces(curr, playerColor)
         numOfSimulationMoves = len(simulationMoves)
         if numOfSimulationMoves == 0:
             return LOSE
         randomMoveNumber = random.randint(0,numOfSimulationMoves - 1)
         randomMove = simulationMoves[randomMoveNumber]
-        place_piece(curr, board, randomMove, playerColor)
-        rollout(curr, board, playerColor)
+        place_piece(curr, randomMove, playerColor)
+        rollout(curr, playerColor)
 
 
 # this function generates and randomly places an enemy move.
 def generateAndPlaceRandomEnemyMove(
     curr: State,
-    board: dict[Coord, PlayerColor],
     playerColor: bool
 ) -> int:
     
@@ -175,30 +175,29 @@ def generateAndPlaceRandomEnemyMove(
     else:
         enemyColor = PlayerColor.RED
 
-    enemiesLegalPieces = generate_pieces(curr, board, not playerColor)                                           
+    enemiesLegalPieces = generate_pieces(curr, not playerColor)                                           
     numberOfPieces = len(enemiesLegalPieces)
     if (numberOfPieces == 0):
         return WIN
 
     chosenPieceNumber = random.randint(0, numberOfPieces - 1)
     enemyPiece = enemiesLegalPieces[chosenPieceNumber]
-    place_piece(curr, board, enemyPiece, enemyColor)
+    place_piece(curr, enemyPiece, enemyColor)
     return CONTINUE
 
 
 def place_piece(
     curr: State,
-    board: dict[Coord, PlayerColor],
     piece: PlaceAction,
     playerColor: bool
 ):
     color = PlayerColor.BLUE
     if playerColor:
         color = PlayerColor.RED
-    board.update({piece.c1: color})
-    board.update({piece.c2: color})
-    board.update({piece.c3: color})
-    board.update({piece.c4: color})
+    curr.board.update({piece.c1: color})
+    curr.board.update({piece.c2: color})
+    curr.board.update({piece.c3: color})
+    curr.board.update({piece.c4: color})
     curr.row_filled[piece.c1.r] += 1
     curr.col_filled[piece.c1.c] += 1
     curr.row_filled[piece.c2.r] += 1
