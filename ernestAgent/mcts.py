@@ -3,20 +3,23 @@ from .state import State
 from .generation import generate_pieces, generate_states
 import math
 import random 
-import time
 
 MAX_MOVES = 150
 WIN = 1
 DRAW = 0
 LOSE = -1
-CONTINUE = 0
 EXPLORATION_PARAMETER = math.sqrt(2)
-TIME_LIMIT = 180
 
 # things to do 
-# i need to reset the board after placing a piece in my mst. resst it before i return the optimal piece back
+# create 2 different strategy for the starting and the ending, the starting implementations doesnt have to go too deep to save time
+# maybe change the way i store the wins
+# explore ways to optimize the search 
+# change the way enemy places their pieces to have a better result
 
-# function to check if the board has any of either red or blue left
+
+# checking if there is any red/blue square in the board, if there is not red square in the board and it is red turn, 
+# the function will return true. 
+
 def noPlayerColor( 
     curr: State,
     playerColor: bool 
@@ -36,7 +39,6 @@ def noPlayerColor(
     
     return True
 
-# the function checks if the game will end either by not generating any more legal moves or no playercolor on the board
 def gameEndingCondition(
     curr: State,
     playerColor: bool,
@@ -45,8 +47,7 @@ def gameEndingCondition(
         return True
     else:
         return False
-
-# the function checks who is winner if the number of moves hits 150, by checking who has more squares  
+    
 def evaluation(
     curr: State,
     playerColor: bool
@@ -61,15 +62,14 @@ def evaluation(
 
     return result(numRedSquares, numBlueSquares, playerColor)
 
-# the function return the number of enemy moves.
 def numEnemyAvailMoves(
         curr: State,
         playerColor: bool
 ) -> int:
     enemyColor = not playerColor
-    return len(generate_pieces(curr, enemyColor))
+    return len(generate_pieces(curr.board, enemyColor))
     
-# the function returns the result of who wins by checking the number of squares each player have    
+    
 def result(
     redSquares: int,
     blueSquares: int,
@@ -92,99 +92,77 @@ def result(
         else: 
             return DRAW
 
-def copyState(
-        curr: State
-) -> State:
-    testingState = State(curr.board.copy(), curr.piece, curr.row_filled.copy(), curr.col_filled.copy(), curr.moves)
-    return testingState
-
-# the function runs the mcts and returns the optimal piece within the time limit
 def mcts(
     curr: State,
     playerColor: bool
 ) -> PlaceAction:
     
-    testingState = copyState(curr)
     optimalPiece = None
     optimalPieceScore = 0
-    rolloutNum = 150
+    rolloutNum = 50
     numParentPlayouts = 0
-    childrenPieces = generate_pieces(testingState, playerColor)
-    startTime = time.process_time()
+    childrenPieces = generate_pieces(curr.board, playerColor)
 
-    # iterating all possible pieces generated.
     for piece in childrenPieces:
-        # time limit
-        currentTime = time.process_time()
-        if (currentTime - startTime) >= 3:
-            return optimalPiece
-        
-        # i will place the piece and then start the mcts
         currentPieceScore = 0
         numWins = 0
-        place_piece(testingState, piece, playerColor)
+        place_piece(curr.board,piece, playerColor)
 
-        # set the rollout num and iterating through how many rollouts
         for currentRollOut in range(rolloutNum):
-            score = rollout(testingState, playerColor)
+            score = rollout(curr.board, playerColor)
             numParentPlayouts += 1
-            if score == WIN :
+            if score == 1 :
                 numWins += 1
-        # calculating the current piece score using the formula 
+        
         currentPieceScore = selection(numWins, rolloutNum, numParentPlayouts)
-
-        # checking if this piece is better than the optimal piece
         if currentPieceScore > optimalPieceScore:
             optimalPiece = piece 
             optimalPieceScore = currentPieceScore
 
+    
     return optimalPiece
 
-# the function recurse itself till the game ends.
+
 def rollout(
     curr: State,
     playerColor: bool
 ) -> int:
 
-    #terminating the function condition basically when the game ends
-    if gameEndingCondition(curr, playerColor):
-            return evaluation(curr, playerColor)
+    if gameEndingCondition(curr.board, playerColor):
+            return evaluation(curr.board, playerColor)
     
-    # very basic move for now to generate and randomly places an enemy move, could be refined later on.
-    if generateAndPlaceRandomEnemyMove(curr, playerColor) == CONTINUE:
+    if generateAndPlaceRandomEnemyMove(curr.board, playerColor) != 1:
 
-        # continue with the random placement of the player piece.
-        simulationMoves = generate_pieces(curr, playerColor)
+        simulationMoves = generate_pieces(curr.board, playerColor)
         numOfSimulationMoves = len(simulationMoves)
         if numOfSimulationMoves == 0:
             return LOSE
-        randomMoveNumber = random.randint(0,numOfSimulationMoves - 1)
+        randomMoveNumber = random.randit(0,numOfSimulationMoves)
         randomMove = simulationMoves[randomMoveNumber]
-        place_piece(curr, randomMove, playerColor)
-        rollout(curr, playerColor)
+        place_piece(curr.board, randomMove, playerColor)
+        rollout(curr.board, playerColor)
 
 
-# this function generates and randomly places an enemy move.
 def generateAndPlaceRandomEnemyMove(
     curr: State,
     playerColor: bool
-) -> int:
+):
     
+    gameContinues = 0
     if playerColor:
         enemyColor = PlayerColor.BLUE
     else:
         enemyColor = PlayerColor.RED
 
-    enemiesLegalPieces = generate_pieces(curr, not playerColor)                                           
+    enemiesLegalPieces = generate_pieces(curr.board, not playerColor)                                           
     numberOfPieces = len(enemiesLegalPieces)
     if (numberOfPieces == 0):
         return WIN
 
-    chosenPieceNumber = random.randint(0, numberOfPieces - 1)
+    chosenPieceNumber = random.randint(0, numberOfPieces)
     enemyPiece = enemiesLegalPieces[chosenPieceNumber]
-    place_piece(curr, enemyPiece, enemyColor)
-    return CONTINUE
-
+    place_piece(curr.board, enemyPiece, enemyColor)
+    return gameContinues
 
 def place_piece(
     curr: State,
@@ -233,10 +211,9 @@ def delete_lines(state: State):
             state.col_filled[key.c] -= 1
             del state.board[key]
 
-# the function calculates the score based on the formula.
 def selection(
     numWins: int,
     numPlayouts: int,
     numParentPlayouts: int
-) -> float:
+) -> float 
      return (numWins / numPlayouts) + EXPLORATION_PARAMETER * (math.sqrt(math.log10(numParentPlayouts))/numPlayouts)
