@@ -151,7 +151,7 @@ def rollout(
             return evaluation(curr, playerColor)
     
     # very basic move for now to generate and randomly places an enemy move, could be refined later on.
-    if generateAndPlaceRandomEnemyMove(curr, playerColor) == CONTINUE:
+    if generateAndPlaceEnemyMove(curr, playerColor) == CONTINUE:
 
         # continue with the random placement of the player piece.
         simulationMoves = generate_pieces(curr, playerColor)
@@ -161,11 +161,11 @@ def rollout(
         randomMoveNumber = random.randint(0,numOfSimulationMoves - 1)
         randomMove = simulationMoves[randomMoveNumber]
         place_piece(curr, randomMove, playerColor)
-        rollout(curr, playerColor)
+        return rollout(curr, playerColor)
 
 
 # this function generates and randomly places an enemy move.
-def generateAndPlaceRandomEnemyMove(
+def generateAndPlaceEnemyMove(
     curr: State,
     playerColor: bool
 ) -> int:
@@ -175,15 +175,47 @@ def generateAndPlaceRandomEnemyMove(
     else:
         enemyColor = PlayerColor.RED
 
-    enemiesLegalPieces = generate_pieces(curr, not playerColor)                                           
-    numberOfPieces = len(enemiesLegalPieces)
-    if (numberOfPieces == 0):
+    if (len(generate_pieces(curr, enemyColor)) == 0):
         return WIN
 
-    chosenPieceNumber = random.randint(0, numberOfPieces - 1)
-    enemyPiece = enemiesLegalPieces[chosenPieceNumber]
+    enemyPiece = generateSimpleEnemy(curr, enemyColor)
     place_piece(curr, enemyPiece, enemyColor)
     return CONTINUE
+
+def generateSimpleEnemy(
+    curr: State,
+    enemyColor: bool
+) -> PlaceAction:   
+
+    enemiesLegalPieces = generate_pieces(curr, enemyColor)
+    bestMove = None
+    bestScore = 0
+    testingState = copyState(curr)
+    for enemyMove in enemiesLegalPieces:
+        
+        place_piece(testingState, enemyMove, enemyColor)
+
+        while not gameEndingCondition(testingState, enemyColor):
+            player_move = mcts(testingState, not enemyColor)
+            place_piece(testingState, player_move, not enemyColor)
+
+            if gameEndingCondition(testingState, enemyColor):
+                break
+
+            simulationMoves = generate_pieces(testingState, enemyColor)
+            numOfSimulationMoves = len(simulationMoves)
+            if numOfSimulationMoves == 0:
+                return LOSE
+            randomMoveNumber = random.randint(0,numOfSimulationMoves - 1)
+            randomMove = simulationMoves[randomMoveNumber]
+            place_piece(testingState, randomMove, enemyColor)
+
+        score = evaluation(testingState, enemyColor)
+        if score > bestScore:
+            bestScore = score
+            bestMove = enemyMove
+    
+    return bestMove
 
 
 def place_piece(
@@ -198,6 +230,7 @@ def place_piece(
     curr.board.update({piece.c2: color})
     curr.board.update({piece.c3: color})
     curr.board.update({piece.c4: color})
+
     curr.row_filled[piece.c1.r] += 1
     curr.col_filled[piece.c1.c] += 1
     curr.row_filled[piece.c2.r] += 1
@@ -206,6 +239,7 @@ def place_piece(
     curr.col_filled[piece.c3.c] += 1
     curr.row_filled[piece.c4.r] += 1
     curr.col_filled[piece.c4.c] += 1
+
     delete_lines(curr)
     curr.moves += 1
     
@@ -240,3 +274,4 @@ def selection(
     numParentPlayouts: int
 ) -> float:
      return (numWins / numPlayouts) + EXPLORATION_PARAMETER * (math.sqrt(math.log10(numParentPlayouts))/numPlayouts)
+
