@@ -14,7 +14,12 @@ EXPLORATION_PARAMETER = math.sqrt(2)
 TIME_LIMIT = 180
 
 # things to do 
-# i need to reset the board after placing a piece in my mst. resst it before i return the optimal piece back
+# should i change my enemy function to choose the piece that has the least amount of player moves left + num of player blocks cleared. (seems like a good idea)
+
+# i should implement 2 different strategy to the mcts to achieve better efficiency, maybe the first 5 moves could be light playout or even random since the start of the game
+# does not matter too much
+# maybe instead of 150 rollouts i can do like
+# i should change the way i store the moves, i need to store them in self, and the way i update the wins should also be in self.
 
 # function to check if the board has any of either red or blue left
 def noPlayerColor( 
@@ -150,12 +155,17 @@ def rollout(
     if gameEndingCondition(curr, playerColor):
             return evaluation(curr, playerColor)
     
-    # very basic move for now to generate and randomly places an enemy move, could be refined later on.
+    # if there are no more valid enemy move, player wins
+    if generateAndPlaceEnemyMove(curr, playerColor) == WIN:
+        return WIN
+
+    # there are enemy moves left and enemy placed a move hence continue to the random move. 
     if generateAndPlaceEnemyMove(curr, playerColor) == CONTINUE:
 
         # continue with the random placement of the player piece.
         simulationMoves = generate_pieces(curr, playerColor)
         numOfSimulationMoves = len(simulationMoves)
+        
         if numOfSimulationMoves == 0:
             return LOSE
         randomMoveNumber = random.randint(0,numOfSimulationMoves - 1)
@@ -179,6 +189,8 @@ def generateAndPlaceEnemyMove(
         return WIN
 
     enemyPiece = generateSimpleEnemy(curr, enemyColor)
+    if enemyPiece == None:
+        return WIN
     place_piece(curr, enemyPiece, enemyColor)
     return CONTINUE
 
@@ -190,22 +202,19 @@ def generateSimpleEnemy(
     enemiesLegalPieces = generate_pieces(curr, enemyColor)
     bestMove = None
     bestScore = 0
-    testingState = copyState(curr)
+
     for enemyMove in enemiesLegalPieces:
-        
+        testingState = copyState(curr)
         place_piece(testingState, enemyMove, enemyColor)
 
         while not gameEndingCondition(testingState, enemyColor):
             player_move = mcts(testingState, not enemyColor)
             place_piece(testingState, player_move, not enemyColor)
 
-            if gameEndingCondition(testingState, enemyColor):
-                break
-
             simulationMoves = generate_pieces(testingState, enemyColor)
             numOfSimulationMoves = len(simulationMoves)
             if numOfSimulationMoves == 0:
-                return LOSE
+                return None
             randomMoveNumber = random.randint(0,numOfSimulationMoves - 1)
             randomMove = simulationMoves[randomMoveNumber]
             place_piece(testingState, randomMove, enemyColor)
