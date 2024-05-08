@@ -68,6 +68,11 @@ class Agent:
         print(self._state.row_filled)
         print("COL:")
         print(self._state.col_filled)
+        print(playerColor)
+
+        # starting moves need not be optimal 
+        # if self.state.moves <= 10:
+        #     place random moves 
 
         return mcts(self._state,playerColor)
 

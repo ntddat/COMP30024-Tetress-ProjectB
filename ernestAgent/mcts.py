@@ -12,6 +12,7 @@ LOSE = -1
 CONTINUE = 0
 EXPLORATION_PARAMETER = math.sqrt(2)
 TIME_LIMIT = 180
+BIG_NUMBER = 10000
 
 # things to do 
 # should i change my enemy function to choose the piece that has the least amount of player moves left + num of player blocks cleared. (seems like a good idea)
@@ -117,6 +118,8 @@ def mcts(
     childrenPieces = generate_pieces(testingState, playerColor)
     startTime = time.process_time()
 
+    if curr.moves <= 8:
+        return generateStartingMoves(curr, playerColor)
     # iterating all possible pieces generated.
     for piece in childrenPieces:
         # time limit
@@ -127,21 +130,30 @@ def mcts(
         # i will place the piece and then start the mcts
         currentPieceScore = 0
         numWins = 0
+        # placing a playerMove and then placing a enemyMove before moving to the rollout state
         place_piece(testingState, piece, playerColor)
-
+        outcome = generateAndPlaceEnemyMove(testingState, playerColor)
+        if outcome == WIN:
+            numWins += 1
+            
+        # rollout stage
         # set the rollout num and iterating through how many rollouts
         for currentRollOut in range(rolloutNum):
             score = rollout(testingState, playerColor)
             numParentPlayouts += 1
+
             if score == WIN :
                 numWins += 1
-        # calculating the current piece score using the formula 
-        currentPieceScore = selection(numWins, rolloutNum, numParentPlayouts)
 
-        # checking if this piece is better than the optimal piece
-        if currentPieceScore > optimalPieceScore:
-            optimalPiece = piece 
-            optimalPieceScore = currentPieceScore
+            # calculating the current piece score using the formula 
+            currentPieceScore = selection(numWins, rolloutNum, numParentPlayouts)
+            # checking if this piece is better than the optimal piece
+            if currentPieceScore > optimalPieceScore:
+                optimalPiece = piece 
+                optimalPieceScore = currentPieceScore
+
+    # resetting the state to the original to not contaminate the subsequent rollout.
+    testingState = curr
 
     return optimalPiece
 
@@ -161,18 +173,17 @@ def rollout(
 
     # there are enemy moves left and enemy placed a move hence continue to the random move. 
     if generateAndPlaceEnemyMove(curr, playerColor) == CONTINUE:
-
         # continue with the random placement of the player piece.
         simulationMoves = generate_pieces(curr, playerColor)
         numOfSimulationMoves = len(simulationMoves)
-        
+
         if numOfSimulationMoves == 0:
             return LOSE
+        
         randomMoveNumber = random.randint(0,numOfSimulationMoves - 1)
         randomMove = simulationMoves[randomMoveNumber]
         place_piece(curr, randomMove, playerColor)
         return rollout(curr, playerColor)
-
 
 # this function generates and randomly places an enemy move.
 def generateAndPlaceEnemyMove(
@@ -180,52 +191,88 @@ def generateAndPlaceEnemyMove(
     playerColor: bool
 ) -> int:
     
-    if playerColor:
-        enemyColor = PlayerColor.BLUE
-    else:
-        enemyColor = PlayerColor.RED
+    enemyColor = not playerColor
 
     if (len(generate_pieces(curr, enemyColor)) == 0):
         return WIN
 
-    enemyPiece = generateSimpleEnemy(curr, enemyColor)
+    enemyPiece = generateEnemyMove(curr, enemyColor)
     if enemyPiece == None:
         return WIN
     place_piece(curr, enemyPiece, enemyColor)
     return CONTINUE
 
-def generateSimpleEnemy(
-    curr: State,
-    enemyColor: bool
-) -> PlaceAction:   
+# def generateSimpleEnemy(
+#     curr: State,
+#     enemyColor: bool
+# ) -> PlaceAction:   
 
-    enemiesLegalPieces = generate_pieces(curr, enemyColor)
-    bestMove = None
-    bestScore = 0
+#     enemiesLegalPieces = generate_pieces(curr, enemyColor)
+#     bestMove = None
+#     bestScore = 0
 
-    for enemyMove in enemiesLegalPieces:
-        testingState = copyState(curr)
-        place_piece(testingState, enemyMove, enemyColor)
+#     for enemyMove in enemiesLegalPieces:
+#         testingState = copyState(curr)
+#         place_piece(testingState, enemyMove, enemyColor)
 
-        while not gameEndingCondition(testingState, enemyColor):
-            player_move = mcts(testingState, not enemyColor)
-            place_piece(testingState, player_move, not enemyColor)
+#         while not gameEndingCondition(testingState, enemyColor):
+#             player_move = mcts(testingState, not enemyColor)
+#             place_piece(testingState, player_move, not enemyColor)
 
-            simulationMoves = generate_pieces(testingState, enemyColor)
-            numOfSimulationMoves = len(simulationMoves)
-            if numOfSimulationMoves == 0:
-                return None
-            randomMoveNumber = random.randint(0,numOfSimulationMoves - 1)
-            randomMove = simulationMoves[randomMoveNumber]
-            place_piece(testingState, randomMove, enemyColor)
+#             simulationMoves = generate_pieces(testingState, enemyColor)
+#             numOfSimulationMoves = len(simulationMoves)
+#             if numOfSimulationMoves == 0:
+#                 return None
+#             randomMoveNumber = random.randint(0,numOfSimulationMoves - 1)
+#             randomMove = simulationMoves[randomMoveNumber]
+#             place_piece(testingState, randomMove, enemyColor)
 
-        score = evaluation(testingState, enemyColor)
-        if score > bestScore:
-            bestScore = score
-            bestMove = enemyMove
+#         score = evaluation(testingState, enemyColor)
+#         if score > bestScore:
+#             bestScore = score
+#             bestMove = enemyMove
     
-    return bestMove
+#     return bestMove
 
+
+
+# This function is to find a enemy move that is not random but based off the number of moves 
+# and blocks the player has left after the move is made, the function will choose the move that leads to the least
+# amount of moves left and least amount of player blocks. 
+def generateEnemyMove(
+        curr: State,
+        enemyColor: bool
+) -> PlaceAction:
+    
+    lowestPlayerMoves = BIG_NUMBER
+    bestEnemyMove = None
+    enemyMoves = generate_pieces(curr, enemyColor)
+
+    if enemyMoves == 0:
+        return bestEnemyMove
+
+    testingBoard = copyState(curr)
+
+    for move in enemyMoves:
+        place_piece(testingBoard, move, enemyColor)
+        numPlayerMoves = len(generate_pieces(testingBoard, not enemyColor))
+
+        if (numPlayerMoves < lowestPlayerMoves):
+            bestEnemyMove = move
+            lowestPlayerMoves = numPlayerMoves
+        # to reset the board 
+        testingBoard = curr
+    
+    return bestEnemyMove
+
+def generateStartingMoves(
+        curr: State,
+        playerColor: bool
+) -> PlaceAction:
+    moves = generate_pieces(curr, playerColor)
+    numMoves = len(moves)
+    chosenPiece = moves[random.randint(0, numMoves - 1)]
+    return chosenPiece
 
 def place_piece(
     curr: State,
