@@ -24,6 +24,7 @@ class State:
         movesPlayed: int):
         self.board = board
         self.piece = piece
+        self.children = []
         self.row_filled = row
         self.col_filled = col
         self.moves = movesPlayed
@@ -41,4 +42,5 @@ class State:
 
     def __ge__(self, other: 'State') -> bool:
         return self.f_min >= other.f_min
-    
+
+

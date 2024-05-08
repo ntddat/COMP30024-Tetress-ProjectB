@@ -10,10 +10,10 @@ WIN = 1
 DRAW = 0
 LOSE = -1
 CONTINUE = 0
-EXPLORATION_PARAMETER = math.sqrt(2)
+EXPLORATION_PARAMETER = 1.5
 TIME_LIMIT = 180
 BIG_NUMBER = 10000
-
+NUM_ROLLOUT = 100
 # things to do 
 # should i change my enemy function to choose the piece that has the least amount of player moves left + num of player blocks cleared. (seems like a good idea)
 
@@ -23,6 +23,34 @@ BIG_NUMBER = 10000
 # i should change the way i store the moves, i need to store them in self, and the way i update the wins should also be in self.
 
 # function to check if the board has any of either red or blue left
+
+class Node:
+    def __init__(self, state, parent=None):
+        self.state = state
+        self.parent = parent
+        self.children = []
+        self.color = None
+        self.visits = 0
+        self.wins = 0
+
+    def fullyExpanded(self):
+        numChildren = len(self.children)
+        numMoves = len(generate_pieces(self.state, self.color))
+        return numChildren == numMoves
+    
+    def select_child(self, explorationParameter):
+        return max(self.children, key=lambda child: child.wins / child.visits + 
+                   explorationParameter * math.sqrt(math.log(self.visits) / child.visits))
+    
+    def expand(self):
+        action = random.choice(generate_pieces(self.state, self.color))
+        next_state = place_piece(testingState, action, self.color)
+        child_node = Node(next_state, parent=self)
+        self.children.append(child_node)
+        return child_node
+
+
+    
 def noPlayerColor( 
     curr: State,
     playerColor: bool 
@@ -104,6 +132,22 @@ def copyState(
     testingState = State(curr.board.copy(), curr.piece, curr.row_filled.copy(), curr.col_filled.copy(), curr.moves)
     return testingState
 
+    def expand(
+        curr: State,
+        playerColor: bool
+    ) -> PlaceAction:
+        """
+        Expand the node by adding a new child node with an untried action.
+
+        Returns:
+            Node: The newly added child node.
+        """
+        action = random.choice(generate_pieces(curr, PlayerColor))
+        #next_state = self.state.take_action(action)
+        #placepiece
+        child_node = Node(next_state, parent=curr)
+        curr.children.append(child_node)
+        return child_node
 # the function runs the mcts and returns the optimal piece within the time limit
 def mcts(
     curr: State,
@@ -113,49 +157,59 @@ def mcts(
     testingState = copyState(curr)
     optimalPiece = None
     optimalPieceScore = 0
-    rolloutNum = 150
+    rolloutNum = 250
     numParentPlayouts = 0
     childrenPieces = generate_pieces(testingState, playerColor)
     startTime = time.process_time()
 
-    if curr.moves <= 8:
+    if curr.moves <= 6:
         return generateStartingMoves(curr, playerColor)
-    # iterating all possible pieces generated.
-    for piece in childrenPieces:
-        # time limit
-        currentTime = time.process_time()
-        if (currentTime - startTime) >= 3:
-            return optimalPiece
-        
-        # i will place the piece and then start the mcts
-        currentPieceScore = 0
-        numWins = 0
-        # placing a playerMove and then placing a enemyMove before moving to the rollout state
-        place_piece(testingState, piece, playerColor)
-        outcome = generateAndPlaceEnemyMove(testingState, playerColor)
-        if outcome == WIN:
-            numWins += 1
+    
+    for rollout in range(NUM_ROLLOUT):
+
+        # selection function to select the best child 
+        # expand the child 
+        # simulate 
+        # backprogate
+
+
+
+
+        for piece in childrenPieces:
+            # time limit
+            currentTime = time.process_time()
+            if (currentTime - startTime) >= 3:
+                return optimalPiece
             
-        # rollout stage
-        # set the rollout num and iterating through how many rollouts
-        for currentRollOut in range(rolloutNum):
-            score = rollout(testingState, playerColor)
-            numParentPlayouts += 1
-
-            if score == WIN :
+            # i will place the piece and then start the mcts
+            currentPieceScore = 0
+            numWins = 0
+            # placing a playerMove and then placing a enemyMove before moving to the rollout state
+            place_piece(testingState, piece, playerColor)
+            outcome = generateAndPlaceEnemyMove(testingState, playerColor)
+            if outcome == WIN:
                 numWins += 1
+                
+            # rollout stage
+            # set the rollout num and iterating through how many rollouts
+            for currentRollOut in range(rolloutNum):
+                score = rollout(testingState, playerColor)
+                numParentPlayouts += 1
 
-            # calculating the current piece score using the formula 
-            currentPieceScore = selection(numWins, rolloutNum, numParentPlayouts)
-            # checking if this piece is better than the optimal piece
-            if currentPieceScore > optimalPieceScore:
-                optimalPiece = piece 
-                optimalPieceScore = currentPieceScore
+                if score == WIN :
+                    numWins += 1
 
-    # resetting the state to the original to not contaminate the subsequent rollout.
-    testingState = curr
+                # calculating the current piece score using the formula 
+                currentPieceScore = selection(numWins, rolloutNum, numParentPlayouts)
+                # checking if this piece is better than the optimal piece
+                if currentPieceScore > optimalPieceScore:
+                    optimalPiece = piece 
+                    optimalPieceScore = currentPieceScore
 
-    return optimalPiece
+        # resetting the state to the original to not contaminate the subsequent rollout.
+        testingState = curr
+
+        return optimalPiece
 
 # the function recurse itself till the game ends.
 def rollout(
