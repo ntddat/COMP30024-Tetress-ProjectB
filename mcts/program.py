@@ -19,7 +19,7 @@ class Agent:
         Any setup and/or precomputation should be done here.
         """
         board: dict[Coord, PlayerColor] = {}
-        self._state = State(board, None, [0]*BOARD_N, [0]*BOARD_N, 0)
+        self._state = State(board, None, [0]*BOARD_N, [0]*BOARD_N, color, 0, None)
         self._color = color
         match color:
             case PlayerColor.RED:
@@ -69,10 +69,6 @@ class Agent:
         print("COL:")
         print(self._state.col_filled)
         print(playerColor)
-
-        # starting moves need not be optimal 
-        # if self.state.moves <= 10:
-        #     place random moves 
 
         return mcts(self._state,playerColor)
 

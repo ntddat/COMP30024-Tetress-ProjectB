@@ -34,14 +34,20 @@ def delete_lines(state: State):
             state.col_filled[key.c] -= 1
             del state.board[key]
 
+def copyState(
+    curr:State
+) -> State:
+    copyState = State(curr.board.copy(), curr.piece, curr.row_filled.copy(), curr.col_filled.copy(), curr.color, curr.moves, curr.parent)
+    return copyState
+
 def create_state(
     curr: State,
     piece: PlaceAction,
-    maxPlayer: bool
+    playerColor: bool
 ) -> State:
-    new_state = State(curr.board.copy(), piece, curr.row_filled.copy(), curr.col_filled.copy(), curr.moves + 1)
+    new_state = State(curr.board.copy(), piece, curr.row_filled.copy(), curr.col_filled.copy(), playerColor, curr.moves + 1, curr.parent)
     color = PlayerColor.BLUE
-    if maxPlayer:
+    if playerColor:
         color = PlayerColor.RED
     new_state.board.update({piece.c1: color})
     new_state.board.update({piece.c2: color})

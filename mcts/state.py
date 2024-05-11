@@ -2,7 +2,13 @@
 # Project Part B: Single Player Tetress
 
 from referee.game import Coord, PlayerColor, PlaceAction, BOARD_N
+
+
 VERY_BIG_NUM = 1000
+MAX_MOVES = 150
+WIN = 1
+LOSE = -1
+DRAW = 0
 
 class State:
     """
@@ -12,22 +18,34 @@ class State:
     board: dict[Coord, PlayerColor]
     row_filled: list[int]
     col_filled: list[int]
-    prev_pieces: list[PlaceAction]
+    wins: int
+    parent = None
     piece: PlaceAction
+    visits: int
     moves: int
+    color: PlayerColor
 
     def __init__(self,
         board: dict[Coord, PlayerColor],
         piece: PlaceAction | None,
         row: list[int],
         col: list[int],
-        movesPlayed: int):
+        color: PlayerColor,
+        movesPlayed: int,
+        parent=None,
+        ):
+
         self.board = board
         self.piece = piece
         self.row_filled = row
         self.col_filled = col
+        self.parent = parent
+        self.children = []
+        self.wins = 0
+        self.visits = 0
+        self.parent = parent
+        self.color = color
         self.moves = movesPlayed
-        self.prev_pieces = []
 
     # Comparison functions
     def __lt__(self, other: 'State') -> bool:
