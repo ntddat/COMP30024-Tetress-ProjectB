@@ -33,19 +33,19 @@ The basic gameplay sequence of Tetress is as follows.
 
 The repository contains multiple agents that can play the game at varying degrees of effectiveness (developed by us), as well as a way to test the agents against each other (developed by the staff of the subject). Explanations for some of the packages in the repository is below.
 
-- '''agentv7''': The latest version of the agent. Utilizes all the features mentioned in the introduction and the report.
-- '''agentv4''' and '''agentv3''': Older versions of the agent with insignificant differences. Utilizes some of the features mentioned, including **Negamax with Alpha-Beta Pruning**, **Iterative Deepening**, and a **Transposition Table** with **Zobrist Hashing**, in an ineffectve and potentially incorrect way.
-- '''agent''': One of the earliest versions of the agent. Utilizes **Minimax**.
-- '''mcts''': An agent that uses Monte Carlo Tree Search to play the game. The agent proved to be less successful than our final version (not because MCTS is necessarily less effective, but rather because we didn't explore it enough)
-- '''agentrandom''': An agent that makes completely random actions. Useful for testing purposes.
-- '''referee''': The package developed by subject staff to enforce the rules of the game and make the agents play against each other.
+- `agentv7`: The latest version of the agent. Utilizes all the features mentioned in the introduction and the report.
+- `agentv4` and `agentv3`: Older versions of the agent with insignificant differences. Utilizes some of the features mentioned, including **Negamax with Alpha-Beta Pruning**, **Iterative Deepening**, and a **Transposition Table** with **Zobrist Hashing**, in an ineffectve and potentially incorrect way.
+- `agent`: One of the earliest versions of the agent. Utilizes **Minimax**.
+- `mcts`: An agent that uses Monte Carlo Tree Search to play the game. The agent proved to be less successful than our final version (not because MCTS is necessarily less effective, but rather because we didn't explore it enough)
+- `agentrandom`: An agent that makes completely random actions. Useful for testing purposes.
+- `referee`: The package developed by subject staff to enforce the rules of the game and make the agents play against each other.
 
 In order to test any two agents against one another, simply run the command:
-'''
+```
 python -m referee <agent_name> <agent_name>
-'''
+```
 where <agent_name> is replaced by the package name. So, for example, if we wish to test the latest version agent against the random agent, we run the command:
-'''
+```
 python -m referee agentv7 agentrandom
-'''
+```
 In this case, agentv7 will play as RED and move first, and the random agent will play as BLUE and move second.
