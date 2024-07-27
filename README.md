@@ -18,6 +18,8 @@ Tetress is a two-player game played on an 11 by 11 game board. Each player will 
 - Each square always has 4 adjacent squares, even corner and side squares (because of the wrap-around).
 
 Below a coordinate representation of the game board (made by the subject staff) can be found.
+
+
 ![](/gameboard.png)
 
 ### Game Rules
@@ -36,7 +38,7 @@ The repository contains multiple agents that can play the game at varying degree
 - `agentv7`: The latest version of the agent. Utilizes all the features mentioned in the introduction and the report.
 - `agentv4` and `agentv3`: Older versions of the agent with insignificant differences. Utilizes some of the features mentioned, including **Negamax with Alpha-Beta Pruning**, **Iterative Deepening**, and a **Transposition Table** with **Zobrist Hashing**, in an ineffectve and potentially incorrect way.
 - `agent`: One of the earliest versions of the agent. Utilizes **Minimax**.
-- `mcts`: An agent that uses Monte Carlo Tree Search to play the game. The agent proved to be less successful than our final version (not because MCTS is necessarily less effective, but rather because we didn't explore it enough)
+- `mcts`: An agent that uses Monte Carlo Tree Search to play the game. The agent proved to be less successful than our final version (not because MCTS is necessarily less effective, but rather because we didn't explore it enough).
 - `agentrandom`: An agent that makes completely random actions. Useful for testing purposes.
 - `referee`: The package developed by subject staff to enforce the rules of the game and make the agents play against each other.
 
